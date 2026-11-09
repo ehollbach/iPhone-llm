@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Copies build/bin/systemone-cli and models/*.gguf to the device over SSH, then checks the sizes.
+# Copies build/bin/systemone-cli and the models to the device over SSH, then checks the sizes.
+#
+#   scripts/deploy.sh                      the CLI and every models/*.gguf
+#   scripts/deploy.sh NAME.gguf ...        the CLI and only these models from models/
 #
 #   DEVICE_HOST  (localhost)       with iproxy from libimobiledevice: `iproxy 2222:22` forwards over USB
 #   DEVICE_PORT  (2222)
@@ -20,7 +23,16 @@ model_dir="${MODEL_DIR:-/var/mobile/llm}"
 bin="$here/build/bin/systemone-cli"
 [ -f "$bin" ] || { echo "no $bin: run scripts/build.sh first" >&2; exit 1; }
 shopt -s nullglob
-models=("$here"/models/*.gguf)
+if [ $# -gt 0 ]; then
+    models=()
+    for name in "$@"; do
+        m="$here/models/$(basename "$name")"
+        [ -f "$m" ] || { echo "no $m: run scripts/fetch-model.sh first" >&2; exit 1; }
+        models+=("$m")
+    done
+else
+    models=("$here"/models/*.gguf)
+fi
 [ ${#models[@]} -gt 0 ] || { echo "no models/*.gguf: run scripts/fetch-model.sh first" >&2; exit 1; }
 
 ssh_opts=(-i "$key" -o BatchMode=yes -o ServerAliveInterval=5)

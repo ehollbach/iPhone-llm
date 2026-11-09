@@ -93,9 +93,13 @@ def main():
     ap.add_argument("-m", "--model", default=MODEL, help=f"GGUF file in MODEL_DIR on the device (default {MODEL})")
     ap.add_argument("-r", "--reverse-prompt", action="append", default=[], metavar="STR",
                     help="stop when the model writes STR (repeatable)")
-    ap.add_argument("-n", "--max-tokens", type=int, default=48, help="length cap (default 48; about 6 s per token on an A7)")
+    ap.add_argument("-n", "--max-tokens", type=int, default=48, help="length cap (default 48)")
     ap.add_argument("--temperature", type=float, help="sampling temperature (default 0.8, 0 = greedy)")
     ap.add_argument("--chat", action="store_true", help="send the text as a chat message (instruct models)")
+    ap.add_argument("-t", "--threads", type=int, default=2, help="CPU threads (default 2, one per core on a 2-core phone)")
+    ap.add_argument("-c", "--ctx-size", type=int, default=512, help="context in tokens (default 512)")
+    ap.add_argument("--repack", action="store_true",
+                    help="keep a repacked copy of the weights: faster on ARM, about twice the RAM")
     args = ap.parse_args()
 
     if not os.path.exists(KEY):
@@ -103,8 +107,9 @@ def main():
     tunnel = ensure_tunnel()
 
     cli = shlex.quote(f"{BIN_DIR}/systemone-cli")
+    repack = "" if args.repack else " --no-repack"
     remote = (f"cd {shlex.quote(MODEL_DIR)} && exec {cli} -m {shlex.quote(args.model)} "
-              f"--chat --no-repack -c 512 -t 2 --time")  # --chat loads for text generation, raw prompts included
+              f"--chat{repack} -c {args.ctx_size} -t {args.threads} --time")  # --chat: text generation, raw prompts included
     proc = subprocess.Popen(SSH + [remote], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE, text=True, bufsize=1)
 

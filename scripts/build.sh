@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# Cross-compiles systemone-cli (from kneejerk) for iOS 12 and later: arm64, CPU only, ARMv8.0 baseline.
+# Cross-compiles systemone-cli (from kneejerk) for arm64 iPhones, CPU only.
 # Needs a Mac with Xcode, cmake, and KNEEJERK_DIR pointing at a kneejerk checkout with chat mode.
+#
+#   IOS_DEPLOYMENT_TARGET  (12.0)     the oldest iOS the binary runs on
+#   CPU_ARCH               (armv8-a)  the instruction set baseline; armv8-a runs on every arm64 iPhone,
+#                                     a newer chip can take a newer one (e.g. armv8.2-a+fp16), untested here
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")/.." && pwd)"
 kneejerk="${KNEEJERK_DIR:?set KNEEJERK_DIR to a kneejerk checkout with chat mode (see README)}"
+target="${IOS_DEPLOYMENT_TARGET:-12.0}"
+arch="${CPU_ARCH:-armv8-a}"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 build="$here/build/ios"
 
@@ -13,14 +19,13 @@ if ! xcrun --sdk iphoneos --show-sdk-path >/dev/null 2>&1; then
     exit 1
 fi
 
-# GGML_CPU_ARM_ARCH=armv8-a: the A7 has no dot product and no fp16 arithmetic.
 # GGML_ACCELERATE=OFF: ggml asks Accelerate for the new LAPACK headers, iOS 16.4 and later.
 # Below an iOS 13 target, kneejerk weak-links libc++ (std::filesystem is missing on iOS 12).
 cmake -S "$kneejerk" -B "$build" \
     -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos -DCMAKE_OSX_ARCHITECTURES=arm64 \
-    -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DCMAKE_EXE_LINKER_FLAGS=-Wl,-dead_strip \
-    -DGGML_NATIVE=OFF -DGGML_CPU_ARM_ARCH=armv8-a \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$target" -DCMAKE_EXE_LINKER_FLAGS=-Wl,-dead_strip \
+    -DGGML_NATIVE=OFF -DGGML_CPU_ARM_ARCH="$arch" \
     -DGGML_METAL=OFF -DGGML_ACCELERATE=OFF -DGGML_BLAS=OFF -DGGML_OPENMP=OFF
 cmake --build "$build" --target systemone-cli -j "$(sysctl -n hw.ncpu)"
 
