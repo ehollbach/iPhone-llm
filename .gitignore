@@ -1,0 +1,4 @@
+build/
+models/
+*.part
+__pycache__/
