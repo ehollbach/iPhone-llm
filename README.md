@@ -125,4 +125,5 @@ been measured yet; a smaller model (0.5B) would tell. Numbers from other iPhones
   script; no weights are part of this repository. Other models come with their own licenses.
 - **Inference:** [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) through
   [kneejerk](https://github.com/moudrkat/kneejerk) (MIT).
-- **This repository:** MIT, see [LICENSE](LICENSE).
+- **This repository:** free software under the GNU General Public License, version 3 or later,
+  see [LICENSE](LICENSE). Copyright (C) 2026 Eric Hollbach.
